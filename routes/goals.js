@@ -40,3 +40,48 @@ router.post('/', auth, async (req, res) => {
 });
 
 module.exports = router;
+
+// Update a goal
+router.put('/:id', auth, async (req, res) => {
+  const { goalType, target, progress, startDate, endDate } = req.body;
+
+  try {
+      let goal = await Goal.findById(req.params.id);
+
+      if (!goal) {
+          return res.status(404).json({ msg: 'Goal not found' });
+      }
+
+      // Update the goal fields
+      goal.goalType = goalType;
+      goal.target = target;
+      goal.progress = progress;
+      goal.startDate = startDate;
+      goal.endDate = endDate;
+
+      await goal.save();
+      res.json(goal);
+  } catch (error) {
+      console.error('Error updating goal:', error.message);
+      res.status(500).send('Server error');
+  }
+});
+
+
+
+// Delete a goal
+router.delete('/:id', auth, async (req, res) => {
+  try {
+      let goal = await Goal.findById(req.params.id);
+
+      if (!goal) {
+          return res.status(404).json({ msg: 'Goal not found' });
+      }
+
+      await goal.deleteOne(); // Corrected method
+      res.json({ msg: 'Goal removed' });
+  } catch (error) {
+      console.error('Error deleting goal:', error.message);
+      res.status(500).send('Server error');
+  }
+});
