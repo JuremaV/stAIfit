@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
@@ -7,10 +8,7 @@ const goalRoutes = require('./routes/goals');
 const app = express();
 app.use(bodyParser.json());
 
-mongoose.connect('mongodb://localhost:27017/stAIfit', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-});
+mongoose.connect(process.env.MONGODB_URI);
 
 app.use((req, res, next) => {
     console.log(`Received ${req.method} request for ${req.url}`);
@@ -31,6 +29,8 @@ app.get('/', (req, res) => {
     res.send('Server is up and running');
 });
 
-app.listen(3000, () => {
-    console.log('Server is running on port 3000');
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
+

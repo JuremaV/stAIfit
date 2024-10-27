@@ -1,87 +1,51 @@
+// Import necessary modules
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth'); // Import the auth middleware
-const Goal = require('../models/Goal');
-
-// Example protected route to get all goals for a user
-router.get('/', auth, async (req, res) => {
-  try {
-    console.log('Fetching goals for user ID:', req.user.id); // Add this line
-    const goals = await Goal.find({ user: req.user.id });
-    console.log('Goals found:', goals); // Add this line
-    res.json(goals);
-  } catch (error) {
-    console.error('Error fetching goals:', error.message);
-    res.status(500).send('Server error');
-  }
-});
+const Goal = require('../models/Goal'); // Adjust the path to your Goal model
+const auth = require('../middleware/auth'); // Middleware for authentication
 
 // Route to add a new goal
 router.post('/', auth, async (req, res) => {
-  const { goalType, target, progress, startDate, endDate } = req.body;
+  const { goalCategory, target, description } = req.body;
+
+  // Validate the goal category
+  if (goalCategory === 'workout' && typeof target !== 'number') {
+    return res.status(400).json({ msg: 'Target should be a number for workout goals.' });
+  } else if (goalCategory === 'diet' && typeof target !== 'string') {
+    return res.status(400).json({ msg: 'Target should be a string for diet goals.' });
+  }
 
   try {
+    // Create a new goal
     const newGoal = new Goal({
-      user: req.user.id,
-      goalType,
+      user: req.user.id, // Use authenticated user’s ID
+      goalCategory,
       target,
-      progress,
-      startDate,
-      endDate,
+      description: description || '', 
     });
 
-    const goal = await newGoal.save();
-    console.log('Goal added:', goal); // Add this line
-    res.json(goal);
+    // Save goal to the database
+    const savedGoal = await newGoal.save();
+    res.json(savedGoal);
   } catch (error) {
-    console.error('Error adding goal:', error.message);
-    res.status(500).send('Server error');
+    console.error(error.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// Route to get all goals for the authenticated user
+router.get('/', auth, async (req, res) => {
+  try {
+    const goals = await Goal.find({ user: req.user.id });
+    res.json(goals);
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).send('Server Error');
   }
 });
 
 module.exports = router;
 
-// Update a goal
-router.put('/:id', auth, async (req, res) => {
-  const { goalType, target, progress, startDate, endDate } = req.body;
-
-  try {
-      let goal = await Goal.findById(req.params.id);
-
-      if (!goal) {
-          return res.status(404).json({ msg: 'Goal not found' });
-      }
-
-      // Update the goal fields
-      goal.goalType = goalType;
-      goal.target = target;
-      goal.progress = progress;
-      goal.startDate = startDate;
-      goal.endDate = endDate;
-
-      await goal.save();
-      res.json(goal);
-  } catch (error) {
-      console.error('Error updating goal:', error.message);
-      res.status(500).send('Server error');
-  }
-});
 
 
 
-// Delete a goal
-router.delete('/:id', auth, async (req, res) => {
-  try {
-      let goal = await Goal.findById(req.params.id);
-
-      if (!goal) {
-          return res.status(404).json({ msg: 'Goal not found' });
-      }
-
-      await goal.deleteOne(); // Corrected method
-      res.json({ msg: 'Goal removed' });
-  } catch (error) {
-      console.error('Error deleting goal:', error.message);
-      res.status(500).send('Server error');
-  }
-});
